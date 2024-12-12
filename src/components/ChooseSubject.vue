@@ -16,12 +16,6 @@
   </div>
 </template>
 
-<!--实现链接到
-    1.各个科目素材库
-    2.用户主页
-    3.待实现搜索按钮
--->
-
 <script>
 export default {
   data() {

@@ -51,12 +51,6 @@
   </div>
 </template>
 
-<!--实现：
-    1.向后端发送获取条目请求
-    2.展示符合要求条目
-    待实现收藏功能
--->
-
 <script>
 import api from '@/components/axios-instance'; // 引入自定义 axios 实例
 
