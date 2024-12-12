@@ -9,7 +9,7 @@
         <el-input v-model="form.password" type="password" autocomplete="off" />
       </el-form-item>
       <el-form-item label="确认密码" :rules="[{ required: true, message: '请确认密码', trigger: 'blur' }]">
-        <el-input v-model="form.confirmPassword" type="password" autocomplete="off" />
+        <el-input v-model="form.password2" type="password" autocomplete="off" />
       </el-form-item>
       <el-form-item>
         <el-button type="primary" @click="register" :loading="loading">注册</el-button>
@@ -20,6 +20,8 @@
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
   name: 'Register',
   data() {
@@ -27,29 +29,47 @@ export default {
       form: {
         username: '',
         password: '',
-        confirmPassword: ''
+        password2: '',
+        email:'1'
       },
       loading: false
     };
   },
   methods: {
     async register() {
-      if (this.form.password !== this.form.confirmPassword) {
+      if (this.form.password !== this.form.password2) {
         this.$message.error('两次输入的密码不一致');
         return;
       }
 
       this.loading = true;
 
-      // 模拟注册操作：向后端发送请求（这里是模拟，你可以使用 Axios 或 Fetch）
-      setTimeout(() => {
+      try {
+        // 向后端发送注册请求
+        const response = await axios.post('http://127.0.0.1:5175/api/register/', {
+          username: this.form.username,
+          password: this.form.password,
+          password2: this.form.password2
+        });
+
         this.loading = false;
-        localStorage.setItem('user', JSON.stringify({ username: this.form.username }));
-        this.$router.push({ name: 'choose-subject' }); // 注册成功后跳转到选择科目页面
-      }, 2000);
+
+        // 假设后端返回一个成功消息
+        if (response.status === 201) {
+          this.$message.success('注册成功，跳转到登录页');
+          this.$router.push({name: 'login'}); // 注册成功后跳转到登录页面
+        }
+      } catch (error) {
+        this.loading = false;
+        if (error.response && error.response.data) {
+          this.$message.error(error.response.data.detail || '注册失败');
+        } else {
+          this.$message.error('网络错误');
+        }
+      }
     },
     goToLogin() {
-      this.$router.push({ name: 'login' }); // 如果已有账号，跳转到登录页面
+      this.$router.push({name: 'login'}); // 如果已有账号，跳转到登录页面
     }
   }
 };

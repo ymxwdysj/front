@@ -44,6 +44,8 @@
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
   name: 'Login',
   data() {
@@ -55,26 +57,37 @@ export default {
     };
   },
   methods: {
-    handleLogin() {
-      // 登录验证逻辑
-      if (this.form.username === 'admin' && this.form.password === '1234') {
+    async handleLogin() {
+      // 登录验证逻辑，调用后端 API 获取 JWT Token
+      try {
+        const response = await axios.post('http://your-backend-api-url/token/', {
+          username: this.form.username,
+          password: this.form.password
+        });
+
+        const { access, refresh } = response.data; // 假设后端返回的数据包含 access 和 refresh token
+
+        // 将 Token 存储在 localStorage 或 sessionStorage
+        localStorage.setItem('access_token', access);
+        localStorage.setItem('refresh_token', refresh);
+
         // 登录成功，设置登录状态
-        localStorage.setItem('user', JSON.stringify({username: this.form.username}));
-        this.$router.push({name: 'choose-subject'}); // 登录成功后跳转到选择科目页面
-      } else {
+        this.$router.push({ name: 'choose-subject' }); // 登录成功后跳转到选择科目页面
+      } catch (error) {
         // 登录失败，显示错误信息
         this.$message.error('用户名或密码错误');
       }
     },
     goToRegister() {
       // 跳转到注册页面
-      this.$router.push({name: 'register'});
+      this.$router.push({ name: 'register' });
     }
   }
 };
 </script>
 
 <style scoped>
+/* 样式保持不变 */
 .login-container {
   display: flex;
   justify-content: center;
