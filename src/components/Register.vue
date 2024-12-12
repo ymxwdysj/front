@@ -46,7 +46,7 @@ export default {
 
       try {
         // 向后端发送注册请求
-        const response = await axios.post('http://127.0.0.1:5175/api/register/', {
+        const response = await axios.post('http://127.0.0.1:5173/api/register/', {
           username: this.form.username,
           password: this.form.password,
           password2: this.form.password2

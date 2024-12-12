@@ -5,10 +5,10 @@
       <el-form ref="form" :model="form" @submit.prevent="handleLogin" class="login-form">
         <el-form-item label="账号">
           <el-input
-              v-model="form.username"
-              autocomplete="off"
-              placeholder="请输入账号"
-              prefix-icon="el-icon-user">
+            v-model="form.username"
+            autocomplete="off"
+            placeholder="请输入账号"
+            prefix-icon="el-icon-user">
           </el-input>
         </el-form-item>
         <el-form-item label="密码">
@@ -22,9 +22,9 @@
         </el-form-item>
         <el-form-item>
           <el-button
-              type="primary"
-              class="login-button"
-              @click="handleLogin">
+            type="primary"
+            class="login-button"
+            @click="handleLogin">
             登录
           </el-button>
         </el-form-item>
@@ -33,9 +33,9 @@
       <div class="register-link">
         <span>没有账号？</span>
         <el-button
-            type="text"
-            class="register-button"
-            @click="goToRegister">
+          type="text"
+          class="register-button"
+          @click="goToRegister">
           注册
         </el-button>
       </div>
@@ -60,7 +60,7 @@ export default {
     async handleLogin() {
       // 登录验证逻辑，调用后端 API 获取 JWT Token
       try {
-        const response = await axios.post('http://your-backend-api-url/token/', {
+        const response = await axios.post('http://127.0.0.1:5173/api/login/', {
           username: this.form.username,
           password: this.form.password
         });
