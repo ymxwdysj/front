@@ -20,6 +20,18 @@
           <span>{{ formatDate(scope.row.created_at) }}</span>
         </template>
       </el-table-column>
+
+      <!-- 收藏按钮列 -->
+      <el-table-column label="操作">
+        <template #default="scope">
+          <el-button
+              size="small"
+              @click="toggleFavorite(scope.row)"
+              :type="scope.row.is_favorite ? 'danger' : 'primary'">
+            {{ scope.row.is_favorite ? '取消收藏' : '收藏' }}
+          </el-button>
+        </template>
+      </el-table-column>
     </el-table>
 
     <el-dialog title="添加知识条目" v-model="add_dialog_visible" width="60%" :before-close="handleClose">
@@ -52,34 +64,35 @@
 </template>
 
 <script>
-import api from '@/components/axios-instance'; // 引入自定义 axios 实例
+import api from "@/components/axios-instance.js"; // 引入自定义 axios 实例
 
 export default {
   data() {
     return {
       knowledgeEntries: [], // 存储所有知识条目
-      add_dialog_visible: false,
+      category: '', // 当前选择的科目
+      add_dialog_visible: false, // 控制弹窗显示
       knowledgeForm: {
         title: '',
         content: '',
         category: '',
         priority: 1,
-      }
+      },
+      favoriteIds: [] // 存储用户收藏的条目ID
     };
   },
   mounted() {
     const category = this.$route.query.category;
 
     if (!category) {
-      // 如果没有传递 category 参数，跳转回 ChooseSubject 页面
       this.$router.push({ name: 'choose-subject' });
       return;
     }
 
     this.category = category;
-    this.fetchKnowledgeEntries(); // 根据选择的科目加载条目
-  }
-  ,
+    this.favoriteIds = JSON.parse(localStorage.getItem('favoriteIds') || '[]'); // 从 localStorage 获取收藏的条目ID
+    this.fetchKnowledgeEntries(); // 获取条目
+  },
   watch: {
     // 如果切换了科目，重新加载条目
     '$route.query.category'(newCategory) {
@@ -91,10 +104,13 @@ export default {
     async fetchKnowledgeEntries() {
       try {
         const response = await api.get('marks/', {
-          params: {category: this.category},
+          params: { category: this.category },
         });
 
-        this.knowledgeEntries = response.data; // 假设返回的是数组
+        this.knowledgeEntries = response.data.map(entry => ({
+          ...entry,
+          is_favorite: this.favoriteIds.includes(entry.id), // 检查该条目是否在收藏列表中
+        }));
       } catch (error) {
         console.error('获取知识条目出错:', error);
         if (error.response && error.response.status === 401) {
@@ -102,12 +118,13 @@ export default {
         }
       }
     },
+
     async refreshTokenAndRetry() {
       const refreshToken = localStorage.getItem('refresh_token');
       if (refreshToken) {
         try {
-          const refreshResponse = await api.post('token/refresh/', {refresh: refreshToken});
-          const {access} = refreshResponse.data;
+          const refreshResponse = await api.post('token/refresh/', { refresh: refreshToken });
+          const { access } = refreshResponse.data;
           localStorage.setItem('access_token', access);
           this.fetchKnowledgeEntries();
         } catch (error) {
@@ -121,20 +138,25 @@ export default {
         this.$message.error('无法获取 refresh token');
       }
     },
+
     formatDate(dateStr) {
       const date = new Date(dateStr);
       return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`;
     },
+
     goBack() {
       this.$router.push({name: 'choose-subject'});
     },
+
     handleClose(done) {
       this.add_dialog_visible = false;
       done();
     },
+
     resetForm() {
       this.$refs.addFormRef.resetFields();
     },
+
     async submitForm() {
       if (!this.knowledgeForm.title || !this.knowledgeForm.content || !this.knowledgeForm.category) {
         this.$message.error('请填写所有字段');
@@ -150,6 +172,37 @@ export default {
         }
       } catch (error) {
         console.error('添加知识条目失败:', error);
+      }
+    },
+
+    // 收藏或取消收藏
+    async toggleFavorite(entry) {
+      try {
+        // 更新收藏状态
+        if (entry.is_favorite) {
+          // 取消收藏
+          await api.delete(`user-marks/${entry.id}/`);
+          this.favoriteIds = this.favoriteIds.filter(id => id !== entry.id);
+        } else {
+          // 收藏
+          await api.post(`user-marks/`, {
+            mark: entry.id,
+            note: '', // 可以传递用户备注
+            preference_level: 0, // 收藏优先级
+        });
+          this.favoriteIds.push(entry.id);
+        }
+
+        // 更新 localStorage
+        localStorage.setItem('favoriteIds', JSON.stringify(this.favoriteIds));
+
+        // 更新条目收藏状态
+        entry.is_favorite = !entry.is_favorite;
+
+        this.$message.success(entry.is_favorite ? entry.id + ' 收藏成功' : '取消收藏');
+      } catch (error) {
+        console.error('收藏操作失败:', error);
+        this.$message.error('操作失败，请重试');
       }
     }
   }
@@ -195,5 +248,14 @@ export default {
 .reset-btn {
   background-color: #e0e0e0;
   color: #333;
+}
+
+.add-btn {
+  background-color: #67c23a;
+  color: white;
+}
+
+.add-btn:hover {
+  background-color: #58a428;
 }
 </style>
