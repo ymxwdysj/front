@@ -6,7 +6,7 @@ import ChooseSubject from '@/components/ChooseSubject.vue';
 import Subject1 from '@/components/1.vue';
 import Subject2 from '@/components/2.vue';
 import Subject3 from '@/components/3.vue';
-
+import KnowledgeList from '@/components/KnowledgeList.vue'; // 素材列表页面
 const routes = [
     {
         path: '/',
@@ -28,6 +28,13 @@ const routes = [
         name: 'choose-subject',
         component: ChooseSubject,
     },
+    {
+        path: '/knowledge-list', // 使用动态路由参数 category
+        name: 'knowledge-list',
+        component: KnowledgeList,
+        props: (route) => ({ category: route.query.category })
+    },
+
     {
         path: '/subject1',
         name: 'subject1',

@@ -1,5 +1,7 @@
 import axios from 'axios';
 
+<!-- 该文件用于实现JWT 请参考接口文档选择是否调用 -->
+
 // 创建 axios 实例
 const api = axios.create({
     baseURL: 'http://127.0.0.1:5173/api/',
