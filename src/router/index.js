@@ -3,9 +3,6 @@ import Login from '@/components/Login.vue';
 import Register from '../components/Register.vue';
 import UserProfile from '../components/UserProfile.vue'; // 引入 UserProfile.vue
 import ChooseSubject from '@/components/ChooseSubject.vue';
-import Subject1 from '@/components/1.vue';
-import Subject2 from '@/components/2.vue';
-import Subject3 from '@/components/3.vue';
 import KnowledgeList from '@/components/KnowledgeList.vue'; // 素材列表页面
 const routes = [
     {
@@ -35,21 +32,6 @@ const routes = [
         props: (route) => ({ category: route.query.category })
     },
 
-    {
-        path: '/subject1',
-        name: 'subject1',
-        component: Subject1
-    },
-    {
-        path: '/subject2',
-        name: 'subject2',
-        component: Subject2
-    },
-    {
-        path: '/subject3',
-        name: 'subject3',
-        component: Subject3
-    }
 ];
 
 // 使用 Vue 3 的 createRouter 方法创建路由实例
