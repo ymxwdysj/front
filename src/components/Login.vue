@@ -52,7 +52,8 @@ export default {
     return {
       form: {
         username: '',
-        password: ''
+        password: '',
+        loginTime: ''
       }
     };
   },
@@ -64,10 +65,10 @@ export default {
           username: this.form.username,
           password: this.form.password
         });
-
         const { access, refresh } = response.data; // 假设后端返回的数据包含 access 和 refresh token
-
+        this.form.loginTime = new Date().getTime();
         // 将 Token 存储在 localStorage 或 sessionStorage
+        localStorage.setItem('user', JSON.stringify(this.form)); // 保存用户对象为 JSON 字符串
         localStorage.setItem('access_token', access);
         localStorage.setItem('refresh_token', refresh);
 

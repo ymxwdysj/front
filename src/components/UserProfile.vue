@@ -8,33 +8,105 @@
     <h1 class="title">用户信息</h1>
     <div v-if="user">
       <p><strong>用户名:</strong> {{ user.username }}</p>
-      <p><strong>登录时间:</strong> {{ user.loginTime }}</p>
+      <!-- 修改密码按钮 -->
+      <p><strong>登录时间:</strong> {{ formatDate(user.loginTime) }}</p>
+      <el-button @click="openChangePasswordDialog" type="primary" size="large">修改密码</el-button>
+
+
       <h2 class="favorite-title">收藏的知识条目</h2>
 
       <!-- 知识条目表格 -->
-      <el-table :data="favoriteKnowledgeEntries" class="knowledge-table" v-if="favoriteKnowledgeEntries.length > 0">
-        <el-table-column label="标题" prop="title" />
-        <el-table-column label="内容" prop="content" />
-        <el-table-column label="类型" prop="category" />
-        <el-table-column align="center" label="操作" width="120px">
+      <el-table :data="favoriteKnowledgeEntries" class="knowledge-table">
+        <!-- 表头类型选择 -->
+        <el-table-column label="类型" prop="category">
+          <template #header>
+            <el-select v-model="selectedCategory" placeholder="选择类型" @change="loadFavoriteEntries" size="small">
+              <el-option label="全部" value="all"></el-option> <!-- 添加全部选项 -->
+              <el-option label="Poem" value="poem"></el-option>
+              <el-option label="Math" value="Math"></el-option>
+              <el-option label="Science" value="Science"></el-option>
+              <el-option label="English" value="English"></el-option>
+            </el-select>
+          </template>
+        </el-table-column>
+
+        <!-- 标题列，展示前10个字符 -->
+        <el-table-column label="标题" prop="title">
           <template #default="scope">
-            <!-- 使用 FavoriteButton 来处理收藏和取消收藏 -->
-            <favorite-button
-                :entry="scope.row"
-                @update:entry="updateEntry"
-            />
+            <span class="ellipsis-text">{{ scope.row.title.length > 10 ? scope.row.title.slice(0, 10) + '...' : scope.row.title }}</span>
+          </template>
+        </el-table-column>
+
+        <!-- 内容列，展示前10个字符 -->
+        <el-table-column label="内容" prop="content">
+          <template #default="scope">
+            <span class="ellipsis-text">{{ scope.row.content.length > 10 ? scope.row.content.slice(0, 10) + '...' : scope.row.content }}</span>
+          </template>
+        </el-table-column>
+
+        <!-- 笔记列，展示前10个字符 -->
+        <el-table-column label="笔记" prop="note">
+          <template #default="scope">
+            <span class="ellipsis-text">{{ scope.row.note.length > 10 ? scope.row.note.slice(0, 10) + '...' : scope.row.note }}</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column label="优先级" prop="preference_level" />
+
+        <el-table-column align="center" label="操作" width="180px">
+          <template #default="scope">
+            <!-- 收藏按钮 -->
+            <favorite-button :entry="scope.row" @update:entry="updateEntry" />
+            <!-- 查看详情按钮 -->
+            <el-button size="mini" @click="viewDetails(scope.row)">查看详情</el-button>
           </template>
         </el-table-column>
       </el-table>
 
-      <!-- 如果没有收藏的条目 -->
-      <div v-else>
-        <p>您没有收藏任何知识条目。</p>
-      </div>
+
+
     </div>
     <div v-else>
       <p>未登录，无法查看用户信息。</p>
     </div>
+
+    <!-- 修改密码对话框 -->
+    <el-dialog
+      v-model="changePasswordDialogVisible"
+      title="修改密码"
+      :before-close="handleClose"
+      width="50%"
+    >
+      <el-form :model="passwordForm" ref="passwordForm" label-width="120px">
+        <el-form-item label="当前密码" :rules="[{ required: true, message: '请输入当前密码', trigger: 'blur' }]">
+          <el-input v-model="passwordForm.currentPassword" type="password" placeholder="请输入当前密码" />
+        </el-form-item>
+        <el-form-item label="新密码" :rules="[{ required: true, message: '请输入新密码', trigger: 'blur' }]">
+          <el-input v-model="passwordForm.newPassword" type="password" placeholder="请输入新密码" />
+        </el-form-item>
+        <el-form-item label="确认密码" :rules="[{ required: true, message: '请确认新密码', trigger: 'blur' }]">
+          <el-input v-model="passwordForm.confirmPassword" type="password" placeholder="请再次确认新密码" />
+        </el-form-item>
+      </el-form>
+
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="changePasswordDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="isSubmitting" @click="submitPasswordChange">确认修改</el-button>
+      </span>
+    </el-dialog>
+
+    <!-- 查看详情的弹窗 -->
+    <el-dialog v-model="detailDialogVisible" title="条目详情" width="60%">
+      <div>
+        <p><strong>标题:</strong> {{ currentEntry.title }}</p>
+        <p><strong>内容:</strong> {{ currentEntry.content }}</p>
+        <p><strong>笔记:</strong> {{ currentEntry.note }}</p>
+        <p><strong>优先级:</strong> {{ currentEntry.preference_level }}</p>
+      </div>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="detailDialogVisible = false">关闭</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
@@ -49,20 +121,35 @@ export default {
   },
   data() {
     return {
-      user: null, // 当前登录的用户
-      favoriteKnowledgeEntries: [] // 收藏的知识条目
+      user: null,
+      favoriteKnowledgeEntries: [],
+      selectedCategory: 'all',
+      changePasswordDialogVisible: false,
+      detailDialogVisible: false, // 控制查看详情弹窗的显示
+      currentEntry: {}, // 当前选中的条目
+      passwordForm: {
+        currentPassword: '', // 当前密码
+        newPassword: '', // 新密码
+        confirmPassword: '', // 确认密码
+      },
+      isSubmitting: false, // 提交按钮的加载状态
     };
   },
   mounted() {
-    this.user = JSON.parse(localStorage.getItem('user')); // 获取当前登录用户信息
-    if (!this.user) {
-      this.$router.push({name: 'login'}); // 未登录，跳转到登录页
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      this.$message.error('请先登录');
+      this.$router.push({ name: 'login' });
     } else {
-      this.loadFavoriteEntries(); // 用户登录后加载收藏的条目
+      const user = localStorage.getItem('user');
+      if (user) {
+        this.user = JSON.parse(user); // 确保从 localStorage 获取并解析 JSON 字符串
+        this.loadFavoriteEntries(); // 用户登录后加载收藏的条目
+      }
     }
   },
   methods: {
-    // 获取用户的收藏条目
+    // 获取用户的收藏条目，支持类型筛选
     loadFavoriteEntries() {
       const token = localStorage.getItem('access_token');
       if (!token) {
@@ -71,25 +158,33 @@ export default {
         return;
       }
 
+      const params = {
+        category: this.selectedCategory === 'all' ? '' : this.selectedCategory,  // 如果是“全部”，则传空字符串
+      };
+
       api.get('user-marks/', {
         headers: { Authorization: `Bearer ${token}` },
+        params: params,  // 将类型作为请求参数传递
       })
-          .then(response => {
-            // 假设响应数据是一个包含收藏条目的列表
-            console.log(response.data);  // 打印后端返回的数据
-            // 提取返回的数据中的 mark 信息
-            this.favoriteKnowledgeEntries = response.data.map(entry => {
-              return {
-                ...entry.mark,  // 复制 mark 对象的所有字段
-                is_collected: true,  // 给每个条目添加 is_collected 属性，默认值为 true
-                collected_mark_id: entry.id,
-                is_inUser: true,
-              };
-            });
-          })
-          .catch(error => {
-            console.error('获取用户收藏条目失败:', error);
+        .then(response => {
+          this.favoriteKnowledgeEntries = response.data.map(entry => {
+            return {
+              ...entry.mark,  // 复制 mark 对象的所有字段
+              is_collected: true,  // 给每个条目添加 is_collected 属性，默认值为 true
+              collected_mark_id: entry.id,
+              preference_level: entry.preference_level,
+              note: entry.note,
+              is_inUser: true,
+            };
           });
+
+          if (this.favoriteKnowledgeEntries.length === 0) {
+            this.$message.info('没有符合条件的收藏条目');
+          }
+        })
+        .catch(error => {
+          console.error('获取用户收藏条目失败:', error);
+        });
     },
 
     // 更新收藏状态
@@ -97,10 +192,76 @@ export default {
       this.loadFavoriteEntries();
     },
 
+    // 查看详情
+    viewDetails(entry) {
+      this.currentEntry = entry; // 选择当前条目
+      this.detailDialogVisible = true; // 显示详情弹窗
+    },
+
+    openChangePasswordDialog() {
+      this.changePasswordDialogVisible = true;
+    },
+
+    // 提交修改密码
+    async submitPasswordChange() {
+      // 表单验证
+      if (this.passwordForm.newPassword !== this.passwordForm.confirmPassword) {
+        this.$message.error('新密码与确认密码不一致');
+        return;
+      }
+
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        this.$message.error('请先登录');
+        this.$router.push({ name: 'login' });
+        return;
+      }
+
+      this.isSubmitting = true;
+
+      try {
+        console.log({
+          current_password: this.passwordForm.currentPassword,
+          new_password: this.passwordForm.newPassword,
+          confirm_password: this.passwordForm.confirmPassword,
+        });
+
+        const response = await api.post(
+          'user/password/change/',
+          this.passwordForm,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        if (response.status === 200) {
+          this.$message.success('密码修改成功');
+          this.changePasswordDialogVisible = false; // 关闭对话框
+          // 可以在这里做其他处理，比如清空表单或重新登录等
+        }
+      } catch (error) {
+        console.error('修改密码失败:', error);
+        this.$message.error('密码修改失败，请重试');
+      } finally {
+        this.isSubmitting = false;
+      }
+    },
+
+    // 关闭对话框
+    handleClose(done) {
+      done();
+      this.passwordForm = { currentPassword: '', newPassword: '', confirmPassword: '' }; // 重置表单
+    },
+
     // 返回上一页面
     goBack() {
       this.$router.go(-1);  // 返回上一个页面
-    }
+    },
+
+    formatDate(dateStr) {
+      const date = new Date(dateStr);
+      return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`;
+    },
   }
 };
 </script>
@@ -113,6 +274,11 @@ export default {
   padding: 20px;
   font-family: Arial, sans-serif;
 }
+   /* 弹窗样式 */
+ .el-dialog {
+   max-width: 800px;
+   margin: 0 auto;
+ }
 
 /* 返回按钮 */
 .back-button {
@@ -144,6 +310,20 @@ export default {
   width: 100%;
   margin-bottom: 30px;
 }
+
+/* 调整表格列宽 */
+.el-table-column {
+  padding: 10px;
+}
+
+/* 笔记列和优先级列样式 */
+.el-table-column .cell {
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;  /* 防止文字超出时显示省略号 */
+}
+
 
 /* 如果没有收藏的条目 */
 p {
