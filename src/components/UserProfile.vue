@@ -51,14 +51,22 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="优先级" prop="preference_level" />
+        <el-table-column label="优先级" prop="preference_level">
+          <template #default="{ row }">
+            <span>{{ renderPriority(row.preference_level) }}</span>
+          </template>
+        </el-table-column>
 
-        <el-table-column align="center" label="操作" width="180px">
+        <!-- 操作列，使用 flex 布局并排显示按钮 -->
+        <el-table-column align="center" label="操作" width="220px">
           <template #default="scope">
-            <!-- 收藏按钮 -->
-            <favorite-button :entry="scope.row" @update:entry="updateEntry" />
-            <!-- 查看详情按钮 -->
-            <el-button size="mini" @click="viewDetails(scope.row)">查看详情</el-button>
+            <div class="action-buttons">
+              <!-- 取消收藏按钮 -->
+              <favorite-button :entry="scope.row" @update:entry="updateEntry" />
+
+              <!-- 查看详情按钮 -->
+              <view-details-button :entry="scope.row" />
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -94,30 +102,19 @@
         <el-button type="primary" :loading="isSubmitting" @click="submitPasswordChange">确认修改</el-button>
       </span>
     </el-dialog>
-
-    <!-- 查看详情的弹窗 -->
-    <el-dialog v-model="detailDialogVisible" title="条目详情" width="60%">
-      <div>
-        <p><strong>标题:</strong> {{ currentEntry.title }}</p>
-        <p><strong>内容:</strong> {{ currentEntry.content }}</p>
-        <p><strong>笔记:</strong> {{ currentEntry.note }}</p>
-        <p><strong>优先级:</strong> {{ currentEntry.preference_level }}</p>
-      </div>
-      <span slot="footer" class="dialog-footer">
-        <el-button @click="detailDialogVisible = false">关闭</el-button>
-      </span>
-    </el-dialog>
   </div>
 </template>
 
 <script>
 import api from '@/components/axios-instance'; // 导入自定义的axios实例
 import FavoriteButton from '@/components/FavoriteButton.vue'; // 导入 FavoriteButton 组件
+import ViewDetailsButton from '@/components/ViewDetailsButton.vue'; // 引入 ViewDetailsButton 组件
 
 export default {
   name: 'UserProfile',
   components: {
     FavoriteButton,
+    ViewDetailsButton, // 注册 ViewDetailsButton 组件
   },
   data() {
     return {
@@ -125,8 +122,6 @@ export default {
       favoriteKnowledgeEntries: [],
       selectedCategory: 'all',
       changePasswordDialogVisible: false,
-      detailDialogVisible: false, // 控制查看详情弹窗的显示
-      currentEntry: {}, // 当前选中的条目
       passwordForm: {
         currentPassword: '', // 当前密码
         newPassword: '', // 新密码
@@ -192,12 +187,6 @@ export default {
       this.loadFavoriteEntries();
     },
 
-    // 查看详情
-    viewDetails(entry) {
-      this.currentEntry = entry; // 选择当前条目
-      this.detailDialogVisible = true; // 显示详情弹窗
-    },
-
     openChangePasswordDialog() {
       this.changePasswordDialogVisible = true;
     },
@@ -220,12 +209,6 @@ export default {
       this.isSubmitting = true;
 
       try {
-        console.log({
-          current_password: this.passwordForm.currentPassword,
-          new_password: this.passwordForm.newPassword,
-          confirm_password: this.passwordForm.confirmPassword,
-        });
-
         const response = await api.post(
           'user/password/change/',
           this.passwordForm,
@@ -261,6 +244,10 @@ export default {
     formatDate(dateStr) {
       const date = new Date(dateStr);
       return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`;
+    },
+    renderPriority(priority) {
+      let stars = '⭐'.repeat(priority); // 根据优先级的值生成相应数量的星星
+      return stars;
     },
   }
 };
@@ -324,6 +311,12 @@ export default {
   text-overflow: ellipsis;  /* 防止文字超出时显示省略号 */
 }
 
+/* 按钮并排 */
+.action-buttons {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
 
 /* 如果没有收藏的条目 */
 p {
