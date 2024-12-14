@@ -12,8 +12,8 @@
       <p><strong>登录时间:</strong> {{ formatDate(user.loginTime) }}</p>
       <el-button @click="openChangePasswordDialog" type="primary" size="large">修改密码</el-button>
 
-
       <h2 class="favorite-title">收藏的知识条目</h2>
+
 
       <!-- 知识条目表格 -->
       <el-table :data="favoriteKnowledgeEntries" class="knowledge-table">
@@ -51,7 +51,14 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="优先级" prop="preference_level">
+        <!-- 优先级列，支持排序 -->
+        <el-table-column
+          label="优先级"
+          prop="preference_level"
+          sortable
+          :sort-method="sortPriority"
+          @sort-change="toggleSortOrder"
+        >
           <template #default="{ row }">
             <span>{{ renderPriority(row.preference_level) }}</span>
           </template>
@@ -70,9 +77,6 @@
           </template>
         </el-table-column>
       </el-table>
-
-
-
     </div>
     <div v-else>
       <p>未登录，无法查看用户信息。</p>
@@ -80,10 +84,10 @@
 
     <!-- 修改密码对话框 -->
     <el-dialog
-      v-model="changePasswordDialogVisible"
-      title="修改密码"
-      :before-close="handleClose"
-      width="50%"
+        v-model="changePasswordDialogVisible"
+        title="修改密码"
+        :before-close="handleClose"
+        width="50%"
     >
       <el-form :model="passwordForm" ref="passwordForm" label-width="120px">
         <el-form-item label="当前密码" :rules="[{ required: true, message: '请输入当前密码', trigger: 'blur' }]">
@@ -121,6 +125,8 @@ export default {
       user: null,
       favoriteKnowledgeEntries: [],
       selectedCategory: 'all',
+      sortBy: 'title', // 排序方式：标题或优先级
+      sortOrder: 'asc', // 排序顺序：升序或降序
       changePasswordDialogVisible: false,
       passwordForm: {
         currentPassword: '', // 当前密码
@@ -155,31 +161,32 @@ export default {
 
       const params = {
         category: this.selectedCategory === 'all' ? '' : this.selectedCategory,  // 如果是“全部”，则传空字符串
+        sort_by: this.sortBy, // 动态设置排序字段
+        order: this.sortOrder, // 动态设置排序顺序
       };
 
       api.get('user-marks/', {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {Authorization: `Bearer ${token}`},
         params: params,  // 将类型作为请求参数传递
       })
-        .then(response => {
-          this.favoriteKnowledgeEntries = response.data.map(entry => {
-            return {
-              ...entry.mark,  // 复制 mark 对象的所有字段
-              is_collected: true,  // 给每个条目添加 is_collected 属性，默认值为 true
-              collected_mark_id: entry.id,
-              preference_level: entry.preference_level,
-              note: entry.note,
-              is_inUser: true,
-            };
+          .then(response => {
+            this.favoriteKnowledgeEntries = response.data.results.map(entry => {
+              return {
+                ...entry.mark,  // 复制 mark 对象的所有字段
+                is_collected: true,  // 给每个条目添加 is_collected 属性，默认值为 true
+                collected_mark_id: entry.id,
+                preference_level: entry.preference_level,
+                note: entry.note,
+                is_inUser: true,
+              };
+            });
+            if (this.favoriteKnowledgeEntries.length === 0) {
+              this.$message.info('没有符合条件的收藏条目');
+            }
+          })
+          .catch(error => {
+            console.error('获取用户收藏条目失败:', error);
           });
-
-          if (this.favoriteKnowledgeEntries.length === 0) {
-            this.$message.info('没有符合条件的收藏条目');
-          }
-        })
-        .catch(error => {
-          console.error('获取用户收藏条目失败:', error);
-        });
     },
 
     // 更新收藏状态
@@ -202,7 +209,7 @@ export default {
       const token = localStorage.getItem('access_token');
       if (!token) {
         this.$message.error('请先登录');
-        this.$router.push({ name: 'login' });
+        this.$router.push({name: 'login'});
         return;
       }
 
@@ -210,17 +217,16 @@ export default {
 
       try {
         const response = await api.post(
-          'user/password/change/',
-          this.passwordForm,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
+            'user/password/change/',
+            this.passwordForm,
+            {
+              headers: {Authorization: `Bearer ${token}`},
+            }
         );
 
         if (response.status === 200) {
           this.$message.success('密码修改成功');
           this.changePasswordDialogVisible = false; // 关闭对话框
-          // 可以在这里做其他处理，比如清空表单或重新登录等
         }
       } catch (error) {
         console.error('修改密码失败:', error);
@@ -233,7 +239,15 @@ export default {
     // 关闭对话框
     handleClose(done) {
       done();
-      this.passwordForm = { currentPassword: '', newPassword: '', confirmPassword: '' }; // 重置表单
+      this.passwordForm = {currentPassword: '', newPassword: '', confirmPassword: ''}; // 重置表单
+    },
+    // 排序优先级（升序或降序）
+    sortPriority(a, b) {
+      if (this.sortOrder === 'asc') {
+        return a.preference_level - b.preference_level; // 升序
+      } else {
+        return b.preference_level - a.preference_level; // 降序
+      }
     },
 
     // 返回上一页面
@@ -254,78 +268,32 @@ export default {
 </script>
 
 <style scoped>
-/* 页面容器 */
-.container {
-  width: 80%;
-  margin: 0 auto;
-  padding: 20px;
-  font-family: Arial, sans-serif;
-}
-   /* 弹窗样式 */
- .el-dialog {
-   max-width: 800px;
-   margin: 0 auto;
- }
-
-/* 返回按钮 */
-.back-button {
-  text-align: left;
-  margin-bottom: 20px;
-}
-
-.back-btn {
-  background-color: #409eff;
-  color: white;
-  border-radius: 4px;
-}
-
-/* 标题样式 */
-.title {
-  text-align: center;
-  font-size: 28px;
-  color: #333;
-}
-
-.favorite-title {
-  margin-top: 20px;
-  font-size: 24px;
-  color: #333;
-}
-
-/* 表格样式 */
-.knowledge-table {
-  width: 100%;
-  margin-bottom: 30px;
-}
-
-/* 调整表格列宽 */
-.el-table-column {
-  padding: 10px;
-}
-
-/* 笔记列和优先级列样式 */
-.el-table-column .cell {
-  text-align: left;
+.ellipsis-text {
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;  /* 防止文字超出时显示省略号 */
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.knowledge-table {
+  margin-top: 20px;
 }
 
 /* 按钮并排 */
 .action-buttons {
   display: flex;
   justify-content: space-between;
-  width: 100%;
 }
 
-/* 如果没有收藏的条目 */
-p {
-  font-size: 18px;
-  color: #666;
-  margin: 10px 0;
+.back-button {
+  margin-bottom: 20px;
 }
 
-strong {
-  font-weight: bold;
+.title {
+  margin-bottom: 10px;
+}
+
+.favorite-title {
+  margin-top: 30px;
 }
 </style>

@@ -4,6 +4,7 @@ import Register from '../components/Register.vue';
 import UserProfile from '../components/UserProfile.vue'; // 引入 UserProfile.vue
 import ChooseSubject from '@/components/ChooseSubject.vue';
 import KnowledgeList from '@/components/KnowledgeList.vue'; // 素材列表页面
+import Search    from "@/components/Search.vue";
 const routes = [
     {
         path: '/',
@@ -19,6 +20,11 @@ const routes = [
         path: '/user-profile',
         name: 'user-profile',
         component: UserProfile // 用户信息页面
+    },
+    {
+      path: '/search',
+      name: 'search',
+      component: Search,
     },
     {
         path: '/choose-subject',

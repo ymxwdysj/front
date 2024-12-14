@@ -1,37 +1,38 @@
 <template>
   <div class="container">
+    <!-- 返回按钮 -->
     <div class="back-button">
       <el-button @click="goBack" size="small" class="back-btn">返回</el-button>
     </div>
 
+    <!-- 页面标题和展示内容 -->
     <h1 class="title">知识条目</h1>
     <p class="intro-text">展示您选择的素材类型：{{ category }}</p>
 
+    <!-- 按钮区域 -->
     <div class="button-container">
+      <el-button @click="goToSearch" size="small" class="search-btn">跳转到搜索</el-button>
       <el-button @click="add_dialog_visible = true" size="small" class="add-btn">添加条目</el-button>
     </div>
 
+    <!-- 知识条目表格 -->
     <el-table :data="knowledgeEntries" class="knowledge-table">
       <el-table-column label="标题" prop="title" />
 
-      <!-- 显示前10个字，并添加“展开”按钮（仅当内容长度大于10时显示） -->
+      <!-- 显示前10个字，并添加“展开”按钮 -->
       <el-table-column label="内容">
         <template #default="scope">
           <div>
             <span>{{ truncateContent(scope.row.content) }}</span>
-            <!-- 只有内容长度大于10时才显示“展开”按钮 -->
-            <el-button
-              v-if="scope.row.content.length > 10"
-              type="text"
-              size="mini"
-              @click="showFullContent(scope.row)"
-            >
+            <!-- 展开按钮，仅当内容长度大于10时显示 -->
+            <el-button v-if="scope.row.content.length > 10" type="text" size="mini" @click="showFullContent(scope.row)">
               展开
             </el-button>
           </div>
         </template>
       </el-table-column>
 
+      <!-- 类型列 -->
       <el-table-column label="类型" prop="category" />
 
       <!-- 格式化创建时间 -->
@@ -41,18 +42,18 @@
         </template>
       </el-table-column>
 
-      <!-- 收藏按钮 -->
+      <!-- 操作列，收藏按钮 -->
       <el-table-column label="操作">
         <template #default="scope">
-          <favorite-button
-              :entry="scope.row"
-              @update:entry="updateEntryFavoriteStatus"
-          />
+          <favorite-button :entry="scope.row" @update:entry="updateEntryFavoriteStatus" />
         </template>
       </el-table-column>
     </el-table>
 
-    <!-- 添加知识条目弹窗 -->
+    <!-- 分页控件 -->
+    <el-pagination v-if="totalPages > 1" :current-page="currentPage" :page-size="pageSize" :total="totalCount" @current-change="handlePageChange" layout="prev, pager, next, jumper" class="pagination" />
+
+    <!-- 添加条目的弹窗 -->
     <el-dialog title="添加知识条目" v-model="add_dialog_visible" width="60%" :before-close="handleClose">
       <el-form :model="knowledgeForm" ref="addFormRef">
         <el-form-item label="标题">
@@ -62,7 +63,7 @@
           <el-input v-model="knowledgeForm.content" autocomplete="off" />
         </el-form-item>
 
-        <!-- 更新类型选择 -->
+        <!-- 类型选择 -->
         <el-form-item label="类型">
           <el-select v-model="knowledgeForm.category" placeholder="请选择类型">
             <el-option label="Poem" value="poem" />
@@ -79,13 +80,8 @@
       </el-form>
     </el-dialog>
 
-    <!-- 显示完整内容的对话框 -->
-    <el-dialog
-      v-model="dialogVisible"
-      :title="currentEntry.title"
-      width="50%"
-      @close="dialogVisible = false"
-    >
+    <!-- 查看完整内容的对话框 -->
+    <el-dialog v-model="dialogVisible" :title="currentEntry.title" width="50%" @close="dialogVisible = false">
       <p>{{ currentEntry.content }}</p>
       <span slot="footer" class="dialog-footer">
         <el-button @click="dialogVisible = false">关闭</el-button>
@@ -104,16 +100,20 @@ export default {
   },
   data() {
     return {
-      knowledgeEntries: [], // 存储所有知识条目
+      knowledgeEntries: [], // 知识条目列表
       category: '', // 当前选择的科目
-      add_dialog_visible: false, // 控制弹窗显示
+      add_dialog_visible: false, // 控制添加条目弹窗显示
       knowledgeForm: {
         title: '',
         content: '',
         category: '',
       },
-      dialogVisible: false, // 控制完整内容对话框显示
+      dialogVisible: false, // 控制完整内容显示
       currentEntry: {}, // 当前选中的知识条目
+      currentPage: 1, // 当前页
+      totalCount: 0, // 总条目数
+      totalPages: 0, // 总页数
+      pageSize: 5, // 每页显示的条数
     };
   },
   mounted() {
@@ -128,14 +128,17 @@ export default {
     this.fetchKnowledgeEntries(); // 获取条目
   },
   watch: {
-    // 如果切换了科目，重新加载条目
     '$route.query.category'(newCategory) {
       this.category = newCategory;
-      this.fetchKnowledgeEntries();
+      this.fetchKnowledgeEntries(); // 切换科目时重新加载条目
     }
   },
   methods: {
-    // 获取条目列表，并带上 Bearer Token
+    // 跳转到搜索页面
+    goToSearch() {
+      this.$router.push({ name: 'search' });
+    },
+    // 获取条目列表
     async fetchKnowledgeEntries() {
       try {
         const token = localStorage.getItem('access_token');
@@ -146,17 +149,17 @@ export default {
         }
 
         const response = await api.get('collection/', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          params: { category: this.category },
+          headers: { Authorization: `Bearer ${token}` },
+          params: { category: this.category, page: this.currentPage, page_size: this.pageSize },
         });
 
-        this.knowledgeEntries = response.data; // 后端返回的数据直接使用，不需要再处理 is_collected
+        this.knowledgeEntries = response.data.results;
+        this.totalCount = response.data.count;
+        this.totalPages = Math.ceil(this.totalCount / this.pageSize);
       } catch (error) {
         console.error('获取知识条目出错:', error);
         if (error.response && error.response.status === 401) {
-          this.refreshTokenAndRetry(); // 如果是 token 过期，尝试刷新
+          this.refreshTokenAndRetry(); // 如果 token 过期，尝试刷新
         }
       }
     },
@@ -168,13 +171,13 @@ export default {
           const refreshResponse = await api.post('token/refresh/', { refresh: refreshToken });
           const { access } = refreshResponse.data;
           localStorage.setItem('access_token', access);
-          this.fetchKnowledgeEntries();
+          this.fetchKnowledgeEntries(); // 刷新知识条目
         } catch (error) {
           console.error('刷新 token 失败，重新登录');
           this.$message.error('请重新登录');
           localStorage.removeItem('access_token');
           localStorage.removeItem('refresh_token');
-          this.$router.push({name: 'login'});
+          this.$router.push({ name: 'login' });
         }
       } else {
         this.$message.error('无法获取 refresh token');
@@ -189,7 +192,7 @@ export default {
 
     // 返回到选择科目页面
     goBack() {
-      this.$router.push({name: 'choose-subject'});
+      this.$router.push({ name: 'choose-subject' });
     },
 
     // 关闭弹窗
@@ -224,7 +227,7 @@ export default {
 
     // 更新收藏状态
     updateEntryFavoriteStatus() {
-      this.fetchKnowledgeEntries();
+      this.fetchKnowledgeEntries(); // 更新收藏后刷新条目
     },
 
     // 截取内容并显示前10个字
@@ -236,11 +239,16 @@ export default {
     showFullContent(entry) {
       this.currentEntry = entry;
       this.dialogVisible = true;
+    },
+
+    // 分页变更时的处理
+    handlePageChange(page) {
+      this.currentPage = page;
+      this.fetchKnowledgeEntries(); // 切换页码时重新加载数据
     }
   }
 };
 </script>
-
 
 <style scoped>
 .container {
@@ -252,21 +260,25 @@ export default {
 .title {
   text-align: center;
   font-size: 28px;
-  margin-bottom: 30px;
+  margin-bottom: 20px;
+  color: #409eff;
 }
 
 .intro-text {
   text-align: center;
   margin-bottom: 20px;
+  font-size: 16px;
+  color: #666;
 }
 
 .button-container {
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 30px;
 }
 
 .knowledge-table {
   width: 100%;
+  margin-bottom: 30px;
 }
 
 .el-button {
@@ -290,5 +302,20 @@ export default {
 
 .add-btn:hover {
   background-color: #58a428;
+}
+
+.pagination {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.search-btn {
+  background-color: #409eff;
+  color: white;
+  margin-left: 10px;
+}
+
+.search-btn:hover {
+  background-color: #357ab7;
 }
 </style>
