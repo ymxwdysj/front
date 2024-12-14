@@ -145,7 +145,7 @@ export default {
         if (response.status === 201) {
           this.isCollected = true; // 更新收藏状态
           this.addDialogVisible = false;
-          this.$emit("update:entry", { ...this.entry, is_collected: true });
+          this.$emit("update:entry");
           this.$message.success("收藏成功");
         }
       } catch (error) {
@@ -172,10 +172,12 @@ export default {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        if (response.status === 204) {
-          this.isCollected = false; // 更新收藏状态
+        if (response.status === 204 ) {
+          if (!this.entry.is_inUser) {
+            this.isCollected = false; // 更新收藏状态
+          }
           this.confirmDialogVisible = false;
-          this.$emit("update:entry", { ...this.entry, is_collected: false });
+          this.$emit("update:entry");
           this.$message.success("取消收藏成功");
         }
       } catch (error) {

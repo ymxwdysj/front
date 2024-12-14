@@ -13,15 +13,35 @@
 
     <el-table :data="knowledgeEntries" class="knowledge-table">
       <el-table-column label="标题" prop="title" />
-      <el-table-column label="内容" prop="content" />
+
+      <!-- 显示前10个字，并添加“展开”按钮（仅当内容长度大于10时显示） -->
+      <el-table-column label="内容">
+        <template #default="scope">
+          <div>
+            <span>{{ truncateContent(scope.row.content) }}</span>
+            <!-- 只有内容长度大于10时才显示“展开”按钮 -->
+            <el-button
+              v-if="scope.row.content.length > 10"
+              type="text"
+              size="mini"
+              @click="showFullContent(scope.row)"
+            >
+              展开
+            </el-button>
+          </div>
+        </template>
+      </el-table-column>
+
       <el-table-column label="类型" prop="category" />
+
+      <!-- 格式化创建时间 -->
       <el-table-column label="创建时间" prop="created_at">
         <template #default="scope">
           <span>{{ formatDate(scope.row.created_at) }}</span>
         </template>
       </el-table-column>
 
-      <!-- 使用 FavoriteButton 组件 -->
+      <!-- 收藏按钮 -->
       <el-table-column label="操作">
         <template #default="scope">
           <favorite-button
@@ -32,6 +52,7 @@
       </el-table-column>
     </el-table>
 
+    <!-- 添加知识条目弹窗 -->
     <el-dialog title="添加知识条目" v-model="add_dialog_visible" width="60%" :before-close="handleClose">
       <el-form :model="knowledgeForm" ref="addFormRef">
         <el-form-item label="标题">
@@ -51,12 +72,24 @@
           </el-select>
         </el-form-item>
 
-        <!-- 移除优先级表单项 -->
         <el-form-item>
           <el-button @click="submitForm" class="submit-btn">提交</el-button>
           <el-button @click="resetForm" class="reset-btn">重置</el-button>
         </el-form-item>
       </el-form>
+    </el-dialog>
+
+    <!-- 显示完整内容的对话框 -->
+    <el-dialog
+      v-model="dialogVisible"
+      :title="currentEntry.title"
+      width="50%"
+      @close="dialogVisible = false"
+    >
+      <p>{{ currentEntry.content }}</p>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="dialogVisible = false">关闭</el-button>
+      </span>
     </el-dialog>
   </div>
 </template>
@@ -78,8 +111,9 @@ export default {
         title: '',
         content: '',
         category: '',
-        // 移除优先级字段
       },
+      dialogVisible: false, // 控制完整内容对话框显示
+      currentEntry: {}, // 当前选中的知识条目
     };
   },
   mounted() {
@@ -191,6 +225,17 @@ export default {
     // 更新收藏状态
     updateEntryFavoriteStatus() {
       this.fetchKnowledgeEntries();
+    },
+
+    // 截取内容并显示前10个字
+    truncateContent(content) {
+      return content.length > 10 ? content.substring(0, 10) + "..." : content;
+    },
+
+    // 显示完整内容
+    showFullContent(entry) {
+      this.currentEntry = entry;
+      this.dialogVisible = true;
     }
   }
 };

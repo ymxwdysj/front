@@ -15,16 +15,14 @@
       <el-table :data="favoriteKnowledgeEntries" class="knowledge-table" v-if="favoriteKnowledgeEntries.length > 0">
         <el-table-column label="标题" prop="title" />
         <el-table-column label="内容" prop="content" />
-        <el-table-column label="类型" prop="type" />
+        <el-table-column label="类型" prop="category" />
         <el-table-column align="center" label="操作" width="120px">
           <template #default="scope">
-            <el-button
-                @click="handleUnfavorite(scope.row)"
-                size="small"
-                class="unfavorite-btn"
-            >
-              取消收藏
-            </el-button>
+            <!-- 使用 FavoriteButton 来处理收藏和取消收藏 -->
+            <favorite-button
+                :entry="scope.row"
+                @update:entry="updateEntry"
+            />
           </template>
         </el-table-column>
       </el-table>
@@ -41,10 +39,14 @@
 </template>
 
 <script>
-import axios from 'axios';
+import api from '@/components/axios-instance'; // 导入自定义的axios实例
+import FavoriteButton from '@/components/FavoriteButton.vue'; // 导入 FavoriteButton 组件
 
 export default {
   name: 'UserProfile',
+  components: {
+    FavoriteButton,
+  },
   data() {
     return {
       user: null, // 当前登录的用户
@@ -54,7 +56,7 @@ export default {
   mounted() {
     this.user = JSON.parse(localStorage.getItem('user')); // 获取当前登录用户信息
     if (!this.user) {
-      this.$router.push({ name: 'login' }); // 未登录，跳转到登录页
+      this.$router.push({name: 'login'}); // 未登录，跳转到登录页
     } else {
       this.loadFavoriteEntries(); // 用户登录后加载收藏的条目
     }
@@ -62,48 +64,37 @@ export default {
   methods: {
     // 获取用户的收藏条目
     loadFavoriteEntries() {
-      axios.post("http://localhost:5000/favorite_retrieve", {userId: this.user.id}, {
-        withCredentials: true,
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'}
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        this.$message.error('请先登录');
+        this.$router.push({ name: 'login' });
+        return;
+      }
+
+      api.get('user-marks/', {
+        headers: { Authorization: `Bearer ${token}` },
       })
           .then(response => {
-            const favoriteIds = response.data.favoriteEntries || [];
-            this.fetchKnowledgeEntries(favoriteIds);
+            // 假设响应数据是一个包含收藏条目的列表
+            console.log(response.data);  // 打印后端返回的数据
+            // 提取返回的数据中的 mark 信息
+            this.favoriteKnowledgeEntries = response.data.map(entry => {
+              return {
+                ...entry.mark,  // 复制 mark 对象的所有字段
+                is_collected: true,  // 给每个条目添加 is_collected 属性，默认值为 true
+                collected_mark_id: entry.id,
+                is_inUser: true,
+              };
+            });
           })
           .catch(error => {
             console.error('获取用户收藏条目失败:', error);
           });
     },
 
-    // 根据收藏ID加载知识条目
-    fetchKnowledgeEntries(favoriteIds) {
-      axios.post("http://localhost:5000/knowledge_retrieve", {type: "all"}, {
-        withCredentials: true,
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'}
-      })
-          .then(response => {
-            const allKnowledgeEntries = response.data.entries || [];
-            // 根据收藏的ID加载对应的条目
-            this.favoriteKnowledgeEntries = allKnowledgeEntries.filter(entry => favoriteIds.includes(entry.id));
-          })
-          .catch(error => {
-            console.error('获取知识条目失败:', error);
-          });
-    },
-
-    // 取消收藏
-    handleUnfavorite(entry) {
-      axios.post("http://localhost:5000/favorite_remove", {userId: this.user.id, entryId: entry.id}, {
-        withCredentials: true,
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'}
-      })
-          .then(() => {
-            // 移除当前收藏列表中的该条目
-            this.favoriteKnowledgeEntries = this.favoriteKnowledgeEntries.filter(e => e.id !== entry.id);
-          })
-          .catch(error => {
-            console.error('取消收藏失败:', error);
-          });
+    // 更新收藏状态
+    updateEntry() {
+      this.loadFavoriteEntries();
     },
 
     // 返回上一页面
@@ -152,12 +143,6 @@ export default {
 .knowledge-table {
   width: 100%;
   margin-bottom: 30px;
-}
-
-/* 收藏按钮样式 */
-.unfavorite-btn {
-  background-color: #f56c6c;
-  color: white;
 }
 
 /* 如果没有收藏的条目 */
