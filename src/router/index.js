@@ -1,10 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'; // Vue 3 的方式导入
-import Login from '@/components/Login.vue';
-import Register from '../components/Register.vue';
-import UserProfile from '../components/UserProfile.vue'; // 引入 UserProfile.vue
-import ChooseSubject from '@/components/ChooseSubject.vue';
-import KnowledgeList from '@/components/KnowledgeList.vue'; // 素材列表页面
-import Search    from "@/components/Search.vue";
+import Login from '@/views/Login.vue';
+import Register from '../views/Register.vue';
+import UserProfile from '../views/UserProfile.vue'; // 引入 UserProfile.vue
+import ChooseSubject from '@/views/ChooseSubject.vue';
+import KnowledgeList from '@/views/KnowledgeList.vue'; // 素材列表页面
+import Search    from "@/views/Search.vue";
 const routes = [
     {
         path: '/',
