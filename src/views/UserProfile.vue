@@ -85,12 +85,12 @@
 
       <!-- 分页 -->
       <el-pagination
-        v-if="totalItems > pageSize"
-        :current-page="currentPage"
-        :page-size="pageSize"
-        :total="totalItems"
-        layout="prev, pager, next, jumper"
-        @current-change="handlePageChange"
+          v-if="totalItems > pageSize"
+          :current-page="currentPage"
+          :page-size="pageSize"
+          :total="totalItems"
+          layout="prev, pager, next, jumper"
+          @current-change="handlePageChange"
       />
     </div>
     <div v-else>
@@ -186,7 +186,6 @@ export default {
       };
 
       api.get('user-marks/', {
-        headers: {Authorization: `Bearer ${token}`},
         params: params,  // 将类型作为请求参数传递
       })
           .then(response => {
@@ -245,9 +244,6 @@ export default {
         const response = await api.patch(
             'user/password/change/',
             this.passwordForm,
-            {
-              headers: {Authorization: `Bearer ${token}`},
-            }
         );
 
         if (response.status === 200) {

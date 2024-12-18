@@ -44,24 +44,22 @@
         </template>
       </el-table-column>
 
-      <!-- 操作列，收藏按钮 -->
+      <!-- 操作列，提示登录 -->
       <el-table-column label="操作">
         <template #default="scope">
-          <favorite-button :entry="scope.row" @update:entry="updateEntryFavoriteStatus" />
+          <el-button @click="showLoginPrompt" type="text" size="mini">收藏</el-button>
         </template>
       </el-table-column>
     </el-table>
 
-    <!-- 分页控件 -->
-    <el-pagination v-if="totalPages > 1" :current-page="currentPage" :page-size="pageSize" :total="totalCount" @current-change="handlePageChange" layout="prev, pager, next, jumper" class="pagination" />
 
     <!-- 添加条目的弹窗 -->
     <el-dialog
-      title="添加知识条目"
-      v-model="add_dialog_visible"
-      width="60%"
-      :before-close="handleClose"
-      class="add-dialog"
+        title="添加知识条目"
+        v-model="add_dialog_visible"
+        width="60%"
+        :before-close="handleClose"
+        class="add-dialog"
     >
       <el-form :model="knowledgeForm" ref="addFormRef" class="form-container">
         <el-form-item label="标题">
@@ -71,16 +69,6 @@
           <el-input v-model="knowledgeForm.content" autocomplete="off" />
         </el-form-item>
 
-        <!-- 类型选择 -->
-        <el-form-item label="类型">
-          <el-select v-model="knowledgeForm.category" placeholder="请选择类型">
-            <el-option label="Poem" value="poem" />
-            <el-option label="Math" value="Math" />
-            <el-option label="Science" value="Science" />
-            <el-option label="English" value="English" />
-          </el-select>
-        </el-form-item>
-
         <el-form-item class="form-buttons">
           <el-button @click="submitForm" class="submit-btn" type="primary">提交</el-button>
           <el-button @click="resetForm" class="reset-btn" type="warning">重置</el-button>
@@ -88,12 +76,23 @@
       </el-form>
     </el-dialog>
 
+    <el-pagination
+        v-if="totalPages > 1"
+        :current-page="currentPage"
+        :page-size="pageSize"
+        :total="totalCount"
+        @current-change="handlePageChange"
+        layout="prev, pager, next, jumper"
+        class="pagination"
+    />
+
+
     <!-- 查看完整内容的对话框 -->
     <el-dialog
-      v-model="dialogVisible"
-      width="50%"
-      @close="dialogVisible = false"
-      class="content-dialog"
+        v-model="dialogVisible"
+        width="50%"
+        @close="dialogVisible = false"
+        class="content-dialog"
     >
       <!-- 标题显示 -->
       <div class="dialog-section">
@@ -125,12 +124,13 @@
 </template>
 
 <script>
-import api from "@/components/axios-instance.js"; // 引入自定义 axios 实例
+
 import FavoriteButton from '@/components/FavoriteButton.vue'; // 引入 FavoriteButton 组件
-import usePagination from '@/services/usePagination.js'; // 引入分页逻辑封装
-import useForm from '@/services/useForm.js'; // 引入表单处理封装
 import AddKnowledgeDialog from '@/components/AddKnowledgeDialog.vue'; // 引入添加条目子组件
-import { formatDate, truncateContent } from '@/services/utils.js'; // 引入工具函数
+import { formatDate, truncateContent } from '@/services/utils.js';
+import axios from "axios";
+
+import usePagination from "@/services/usePagination.js";
 
 export default {
   components: {
@@ -143,35 +143,31 @@ export default {
       category: '', // 当前选择的科目
       dialogVisible: false, // 控制完整内容显示
       currentEntry: {}, // 当前选中的知识条目
+      add_dialog_visible: false, // 控制添加条目弹窗显示
+      loading: false, // 加载状态
     };
   },
   mounted() {
-    const category = this.$route.query.category;
-    if (!category) {
-      this.$router.push({name: 'choose-subject'});
-      return;
-    }
 
-    this.category = category;
     this.fetchKnowledgeEntries(); // 获取条目
   },
   methods: {
     // 获取条目列表
     async fetchKnowledgeEntries() {
       this.loading = true;
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        this.$message.error('请先登录');
-        this.$router.push({name: 'login'});
-        return;
-      }
-
       try {
-        const response = await api.get('collection/', {
-          params: {category: this.category, page: this.currentPage, page_size: this.pageSize},
-        });
+        const response = await axios.get('http://127.0.0.1:5173/api/marks/',
+            {
+              params: {
+                page: this.currentPage, // 当前页
+                page_size: this.pageSize, // 每页条数
+              }
+          },
+        );
 
         this.knowledgeEntries = response.data.results;
+        console.log(this.knowledgeEntries);
+
         this.setPaginationData(response.data);
       } catch (error) {
         console.error('获取知识条目出错:', error);
@@ -179,11 +175,6 @@ export default {
       } finally {
         this.loading = false;
       }
-    },
-
-    // 更新收藏状态
-    updateEntryFavoriteStatus() {
-      this.fetchKnowledgeEntries(); // 更新收藏后刷新条目
     },
 
     // 分页变更处理
@@ -198,36 +189,17 @@ export default {
       this.dialogVisible = true;
     },
 
-    // 表单提交
-    async submitForm() {
-      try {
-        await this.submitForm(this.$refs.addFormRef);
-        this.fetchKnowledgeEntries(); // 刷新知识条目
-        this.$message.success('条目添加成功');
-      } catch (error) {
-        this.$message.error(error);
-      }
-    },
-
-    // 重置表单
-    resetForm() {
-      this.resetForm(this.$refs.addFormRef);
-    },
-
-    // 返回按钮
-    goBack() {
-      this.$router.push({name: 'choose-subject'});
-    },
-
-    // 跳转到搜索页面
-    goToSearch() {
-      this.$router.push({name: 'search'});
-    },
-
-    // 关闭弹窗
-    handleClose(done) {
-      this.add_dialog_visible = false;
-      done();
+    // 收藏按钮点击，提示用户登录
+    showLoginPrompt() {
+      this.$confirm('您需要登录才能进行此操作。', '提示', {
+        confirmButtonText: '登录',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }).then(() => {
+        this.$router.push({name: 'login'});
+      }).catch(() => {
+        // 用户点击取消，什么也不做
+      });
     },
 
     // 设置分页数据
@@ -235,11 +207,28 @@ export default {
       this.totalCount = data.count;
       this.totalPages = Math.ceil(this.totalCount / this.pageSize);
     },
+
+    // 返回按钮
+    goBack() {
+      this.$router.push({name: 'welcome'});
+    },
+
+    // 跳转到搜索页面
+    goToSearch() {
+      this.$confirm('您需要登录才能进行此操作。', '提示', {
+        confirmButtonText: '登录',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }).then(() => {
+        this.$router.push({name: 'login'});
+      }).catch(() => {
+      });
+    },
   },
   setup() {
-    // 使用 `usePagination` 时需要传递一个数据获取函数
+    // 使用 usePagination 时需要传递一个数据获取函数
     const pagination = usePagination(async () => {
-      await fetchKnowledgeEntries(); // 在 `usePagination` 中使用 `fetchKnowledgeEntries` 方法
+      await fetchKnowledgeEntries(); // 在 usePagination 中使用 fetchKnowledgeEntries 方法
     });
 
     return {
@@ -247,98 +236,13 @@ export default {
       truncateContent,
       formatDate,
     };
+
   },
 
-  ...useForm(),  // 引入表单逻辑
+
 };
 </script>
 
 <style scoped>
-/* 使弹窗的标题更加突出 */
-.add-dialog .el-dialog__header {
-  background-color: #f4f6f9;
-  color: #2c3e50;
-  font-size: 20px;
-  font-weight: bold;
-  text-align: center;
-  padding: 20px;
-  border-bottom: 2px solid #dcdfe6;
-}
-
-/* 调整表单容器样式 */
-.form-container {
-  padding: 20px;
-  background-color: #ffffff;
-  border-radius: 8px;
-}
-
-/* 调整每个表单项的样式 */
-.el-form-item {
-  margin-bottom: 15px;
-}
-
-/* 按钮区的样式 */
-.form-buttons {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 20px;
-}
-
-/* 调整提交和重置按钮的样式 */
-.submit-btn {
-  width: 48%;
-}
-
-.reset-btn {
-  width: 48%;
-}
-
-/* 重置按钮的颜色 */
-.reset-btn {
-  background-color: #f1c40f;
-  color: white;
-  border-color: #f1c40f;
-}
-
-/* 调整查看完整内容对话框样式 */
-.content-dialog .el-dialog__header {
-  background-color: #f4f6f9;
-  color: #2c3e50;
-  font-size: 18px;
-  text-align: center;
-  padding: 20px;
-  border-bottom: 2px solid #dcdfe6;
-}
-
-/* 对话框各部分的样式 */
-.dialog-section {
-  font-size: 16px;
-  margin-bottom: 15px;
-  color: #34495e;
-}
-
-.dialog-section strong {
-  color: #2c3e50;
-}
-
-.dialog-section p {
-  margin: 5px 0 0 0;
-  white-space: pre-wrap; /* 保持换行格式 */
-}
-
-/* 弹窗的内容 */
-.el-dialog__body {
-  padding: 20px;
-}
-
-/* 自定义按钮的样式 */
-.dialog-footer {
-  text-align: center;
-}
-
-/* 增加弹窗边距和阴影效果 */
-.el-dialog {
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
+/* 样式与原页面相同，可以根据需要自定义 */
 </style>

@@ -49,6 +49,23 @@ export default {
   methods: {
     // 打开弹窗
     openDialog() {
+      const token = localStorage.getItem('token'); // 检查本地是否存在登录 token
+      if (!token) {
+        // 未登录，弹出提示框
+        this.$confirm('您需要登录才能添加条目。', '提示', {
+          confirmButtonText: '登录',
+          cancelButtonText: '取消',
+          type: 'warning',
+        }).then(() => {
+          // 跳转到登录页面
+          this.$router.push({ name: 'login' });
+        }).catch(() => {
+          // 用户点击取消，什么也不做
+        });
+        return;
+      }
+
+      // 已登录，打开弹窗
       this.dialogVisible = true;
     },
 

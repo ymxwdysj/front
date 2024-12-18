@@ -4,10 +4,22 @@ import Register from '../views/Register.vue';
 import UserProfile from '../views/UserProfile.vue'; // 引入 UserProfile.vue
 import ChooseSubject from '@/views/ChooseSubject.vue';
 import KnowledgeList from '@/views/KnowledgeList.vue'; // 素材列表页面
+import WelcomePage from '@/views/WelcomePage.vue';
+import VisitorPage from "@/views/VisitorPage.vue";
 import Search    from "@/views/Search.vue";
 const routes = [
     {
         path: '/',
+        name: 'welcome',
+        component: WelcomePage
+    },
+    {
+        path: '/visitor',
+        name: 'visitor',
+        component: VisitorPage
+    },
+    {
+        path: '/user-login',
         name: 'login',
         component: Login
     },

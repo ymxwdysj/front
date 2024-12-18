@@ -131,7 +131,6 @@ export default {
 
       try {
         const response = await api.get("collection/", {
-          headers: {Authorization: `Bearer ${token}`},
           params,
         });
         console.log(response.data);

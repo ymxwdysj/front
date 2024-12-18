@@ -37,13 +37,20 @@
           </el-button>
         </el-form-item>
       </el-form>
-      <div class="register-link">
-        <span>没有账号？</span>
+
+      <!-- 按钮区域 -->
+      <div class="button-group">
         <el-button
             type="text"
             class="register-button"
             @click="goToRegister">
           注册
+        </el-button>
+        <el-button
+            type="text"
+            class="back-button"
+            @click="goBack">
+          返回
         </el-button>
       </div>
     </div>
@@ -83,6 +90,9 @@ export default {
     },
     goToRegister() {
       this.$router.push({ name: 'register' });
+    },
+    goBack() {
+      this.$router.push({ name: 'welcome' });
     }
   }
 };
@@ -209,29 +219,31 @@ h1 {
   background-color: #5a10b6;
 }
 
-/* 注册按钮样式 */
-.register-link {
+/* 按钮区域 */
+.button-group {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
   margin-top: 15px;
-  text-align: center;
 }
 
-.register-button {
-  background-color: rgba(117, 135, 47, 0.27);
-  color: #22626a;
-  padding: 5px 10px;
-  border-radius: 3px;
-  text-align: center;
-  cursor: pointer;
+/* 注册按钮样式 */
+.register-button, .back-button {
+  background-color: #ffffff;
+  color: #080710;
+  font-weight: bold;
+  width: 48%;
+  height: 50px; /* 与输入框一致的高度 */
+  border-radius: 5px;
   transition: background-color 0.3s ease;
-  font-size: 16px;
-  font-weight: 500;
 }
 
-.register-button:hover {
-  background-color: rgba(100, 92, 92, 0.47);
+:deep(.register-button:hover, .back-button:hover) {
+  background-color: #6a11cb;
+  color: #ffffff;
 }
 
-.register-button:active {
-  background-color: rgba(100, 92, 92, 0.47);
+.register-button:active, .back-button:active {
+  background-color: #5a10b6;
 }
 </style>

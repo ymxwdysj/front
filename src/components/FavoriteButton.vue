@@ -137,9 +137,6 @@ export default {
               preference_level: this.form.preference_level,
               note: this.form.note,
             },
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
         );
 
         if (response.status === 201) {
@@ -169,7 +166,6 @@ export default {
 
       try {
         const response = await api.delete(`user-marks/${this.entry.collected_mark_id}/`, {
-          headers: { Authorization: `Bearer ${token}` },
         });
 
         if (response.status === 204 ) {

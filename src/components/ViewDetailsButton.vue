@@ -91,9 +91,6 @@ export default {
             note,
             preference_level,
           },
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
         );
 
         if (response.status === 200) {
