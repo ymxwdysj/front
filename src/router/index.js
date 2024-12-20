@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'; // Vue 3 的方式导入
 import Login from '@/views/Login.vue';
+import AdminLogin from '@/views/AdminLogin.vue';
 import Register from '../views/Register.vue';
 import UserProfile from '../views/UserProfile.vue'; // 引入 UserProfile.vue
 import ChooseSubject from '@/views/ChooseSubject.vue';
@@ -7,11 +8,22 @@ import KnowledgeList from '@/views/KnowledgeList.vue'; // 素材列表页面
 import WelcomePage from '@/views/WelcomePage.vue';
 import VisitorPage from "@/views/VisitorPage.vue";
 import Search    from "@/views/Search.vue";
+import TempPage from "@/views/TempPage.vue";
 const routes = [
     {
         path: '/',
         name: 'welcome',
         component: WelcomePage
+    },
+    {
+        path: '/admin-login',
+        name: 'admin-login',
+        component: AdminLogin
+    },
+    {
+        path: '/temp-page',
+        name: 'temp-page',
+        component: TempPage
     },
     {
         path: '/visitor',
