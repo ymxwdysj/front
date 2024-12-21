@@ -146,7 +146,10 @@
         </el-form-item>
 
         <el-form-item label="标签">
-          <el-input v-model="currentEntry.tags" placeholder="输入标签，用逗号分隔" />
+          <div v-for="(tag, index) in tagEditInputs" :key="index" class="tag-input-group">
+            <el-input v-model="tagEditInputs[index]" placeholder="请输入标签" />
+            <el-button v-if="index === tagEditInputs.length - 1" @click="addEditTagInput" icon="el-icon-plus" size="mini" circle></el-button>
+          </div>
         </el-form-item>
 
         <el-form-item class="form-buttons">
@@ -225,7 +228,8 @@ export default {
         tags: "",
       },
       loading: false,
-      tagInputs: [""] // 用于动态添加标签输入框
+      tagInputs: [""], // 用于动态添加标签输入框
+      tagEditInputs: [],
     };
   },
   mounted() {
@@ -279,6 +283,7 @@ export default {
 
     // 显示添加条目弹窗
     showAddDialog() {
+      this.resetForm();
       this.add_dialog_visible = true;
     },
 
@@ -313,6 +318,10 @@ export default {
     addTagInput() {
       this.tagInputs.push(""); // 向tagInputs数组中添加一个空字符串，用于新的标签输入框
     },
+    // 添加标签输入框
+    addEditTagInput() {
+      this.tagEditInputs.push(""); // 向tagInputs数组中添加一个空字符串，用于新的标签输入框
+    },
 
     // 标签输入框失去焦点时处理
     handleTagBlur() {
@@ -321,6 +330,7 @@ export default {
 
     async editEntry(entry) {
       this.currentEntry = { ...entry };
+      this.tagEditInputs = entry.tags.length ? entry.tags.map(tag => tag.name) : [""]; // 初始化标签输入框
       this.edit_dialog_visible = true;
     },
 
@@ -331,8 +341,12 @@ export default {
           content: this.currentEntry.content,
           category: this.currentEntry.category,
         };
-        console.log(data,this.currentEntry.id);
-        await api.put(`marks/${this.currentEntry.id}/`, data);
+
+        await api.patch(`marks/${this.currentEntry.id}/`, data);
+
+        // 更新标签
+        const tags = this.tagEditInputs.filter(tag => tag.trim()).map(tag => tag.trim());
+        await api.patch(`marks/${this.currentEntry.id}/update-tags/`, { tags });
 
         this.$message.success("条目更新成功");
         this.fetchKnowledgeEntries();
@@ -346,16 +360,6 @@ export default {
       this.edit_dialog_visible = false;
     },
 
-    // 删除条目
-    async deleteEntry(id) {
-      try {
-        await api.delete(`marks/${id}/`);
-        this.$message.success("条目删除成功");
-        this.fetchKnowledgeEntries();
-      } catch (error) {
-        this.$message.error("删除条目失败，请稍后再试。");
-      }
-    },
 
     goBack() {
       this.$router.push({name: "welcome"});
@@ -386,21 +390,27 @@ export default {
 
 <style scoped>
 .container {
+  margin: 20px auto;
   padding: 20px;
+  max-width: 1200px;
+  background-color: #fff;
+  border-radius: 8px;
 }
 
 .title {
   font-size: 24px;
-  font-weight: bold;
+  color: #333;
+  margin-bottom: 10px;
 }
 
 .intro-text {
   font-size: 16px;
-  color: #888;
+  color: #666;
+  margin-bottom: 30px;
 }
 
 .button-container {
-  margin-top: 20px;
+  margin-bottom: 20px;
 }
 
 .search-btn {
@@ -414,31 +424,58 @@ export default {
 }
 
 .knowledge-table {
-  margin-top: 20px;
+  width: 100%;
+  border: none;
+  background-color: #F5F7FB;
+}
+
+.el-table th {
+  background-color: #6065D9;
+  color: white;
+}
+
+.el-button {
+  border-radius: 5px;
+}
+
+.add-dialog, .edit-dialog {
+  max-width: 800px;
 }
 
 .form-container {
-  padding: 20px;
+  width: 100%;
+}
+
+.form-buttons {
+  display: flex;
+  justify-content: space-between;
+}
+
+.submit-btn {
+  background-color: #6065D9;
+  color: white;
+}
+
+.reset-btn {
+  background-color: #17D7FA;
+  color: white;
+}
+
+.dialog-footer {
+  text-align: center;
+}
+
+.dialog-section {
+  margin-bottom: 15px;
 }
 
 .tag-input-group {
   display: flex;
+  gap: 10px;
   margin-bottom: 10px;
 }
 
-.submit-btn {
-  margin-right: 10px;
-}
-
-.reset-btn {
-  margin-left: 10px;
-}
-
-.dialog-section {
-  margin-bottom: 10px;
-}
-
-.content-dialog .dialog-footer {
-  text-align: center;
+.tag-input-group el-input {
+  width: 250px;
 }
 </style>

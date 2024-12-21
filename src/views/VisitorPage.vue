@@ -131,7 +131,6 @@ export default {
       try {
         const response = await axios.get('http://127.0.0.1:5173/api/marks/');
         this.knowledgeEntries = response.data; // 直接赋值为返回的数据
-        console.log(this.knowledgeEntries);
       } catch (error) {
         console.error('获取知识条目出错:', error);
         this.$message.error('获取知识条目失败，请稍后再试。');

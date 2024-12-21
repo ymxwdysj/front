@@ -133,7 +133,6 @@ export default {
         const response = await api.get("collection/", {
           params,
         });
-        console.log(response.data);
         if (response.data) {
           // 确保响应数据包含分页信息
           results.value = response.data.results || []; // 当前页的结果
