@@ -17,9 +17,9 @@
         <el-form-item label="类型">
           <el-select v-model="knowledgeForm.category" placeholder="请选择类型">
             <el-option label="Poem" value="poem" />
-            <el-option label="Math" value="Math" />
-            <el-option label="Science" value="Science" />
-            <el-option label="English" value="English" />
+            <el-option label="Math" value="math" />
+            <el-option label="Science" value="science" />
+            <el-option label="English" value="english" />
           </el-select>
         </el-form-item>
 
@@ -49,7 +49,7 @@ export default {
   methods: {
     // 打开弹窗
     openDialog() {
-      const token = localStorage.getItem('token'); // 检查本地是否存在登录 token
+      const token = localStorage.getItem('access_token'); // 检查本地是否存在登录 token
       if (!token) {
         // 未登录，弹出提示框
         this.$confirm('您需要登录才能添加条目。', '提示', {

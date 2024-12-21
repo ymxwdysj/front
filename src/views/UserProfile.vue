@@ -28,9 +28,9 @@
             <el-select v-model="selectedCategory" placeholder="选择类型" @change="loadFavoriteEntries" size="small">
               <el-option label="全部" value="all"></el-option>
               <el-option label="Poem" value="poem"></el-option>
-              <el-option label="Math" value="Math"></el-option>
-              <el-option label="Science" value="Science"></el-option>
-              <el-option label="English" value="English"></el-option>
+              <el-option label="Math" value="math"></el-option>
+              <el-option label="Science" value="science"></el-option>
+              <el-option label="English" value="english"></el-option>
             </el-select>
           </template>
         </el-table-column>
@@ -42,6 +42,19 @@
           </template>
         </el-table-column>
 
+        <el-table-column label="标签">
+          <template #default="scope">
+            <div>
+              <!-- 判断tags是否为空，若为空显示“无标签”，否则逐个显示标签并加逗号 -->
+              <span v-if="scope.row.tags && scope.row.tags.length > 0">
+        <span v-for="(tag, index) in scope.row.tags" :key="index">
+          {{ tag.name }}<span v-if="index < scope.row.tags.length - 1">, </span>
+        </span>
+      </span>
+              <span v-else>无标签</span>
+            </div>
+          </template>
+        </el-table-column>
         <!-- 内容列，展示前10个字符 -->
         <el-table-column label="内容" prop="content">
           <template #default="scope">

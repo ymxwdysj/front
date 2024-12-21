@@ -1,30 +1,35 @@
 <template>
   <div class="container">
-    <!-- 返回按钮 -->
-    <div class="back-button">
+    <!-- 按钮区域，返回按钮和跳转到搜索按钮放在同一行 -->
+    <div class="button-row">
       <el-button @click="goBack" size="small" class="back-btn">返回</el-button>
+      <el-button @click="goToSearch" size="small" class="search-btn">🔍</el-button>
     </div>
 
     <!-- 页面标题和展示内容 -->
-    <h1 class="title">知识条目</h1>
-    <p class="intro-text">展示您选择的素材类型：{{ category }}</p>
+    <div class="flex-row-container">
+      <h1 class="intro-text">素材类型：{{ category }}</h1>
 
-    <!-- 按钮区域，使用el-row来隔开按钮 -->
-    <div class="button-container">
-      <el-row :gutter="20">
-        <el-col :span="12">
-          <el-button @click="goToSearch" size="small" class="search-btn" block>跳转到搜索</el-button>
-        </el-col>
-        <el-col :span="12">
-          <!-- 引入子组件并监听 entryAdded 事件 -->
-          <add-knowledge-dialog @entryAdded="fetchKnowledgeEntries" />
-        </el-col>
-      </el-row>
+      <!-- 添加条目按钮 -->
+      <add-knowledge-dialog @entryAdded="fetchKnowledgeEntries" />
     </div>
 
     <!-- 知识条目表格 -->
     <el-table :data="knowledgeEntries" class="knowledge-table" v-loading="loading">
       <el-table-column label="标题" prop="title" />
+      <el-table-column label="标签">
+        <template #default="scope">
+          <div>
+            <!-- 判断tags是否为空，若为空显示“无标签”，否则逐个显示标签并加逗号 -->
+            <span v-if="scope.row.tags && scope.row.tags.length > 0">
+        <span v-for="(tag, index) in scope.row.tags" :key="index">
+          {{ tag.name }}<span v-if="index < scope.row.tags.length - 1">, </span>
+        </span>
+      </span>
+            <span v-else>无标签</span>
+          </div>
+        </template>
+      </el-table-column>
       <el-table-column label="内容">
         <template #default="scope">
           <div>
@@ -57,11 +62,11 @@
 
     <!-- 添加条目的弹窗 -->
     <el-dialog
-      title="添加知识条目"
-      v-model="add_dialog_visible"
-      width="60%"
-      :before-close="handleClose"
-      class="add-dialog"
+        title="添加知识条目"
+        v-model="add_dialog_visible"
+        width="60%"
+        :before-close="handleClose"
+        class="add-dialog"
     >
       <el-form :model="knowledgeForm" ref="addFormRef" class="form-container">
         <el-form-item label="标题">
@@ -90,10 +95,10 @@
 
     <!-- 查看完整内容的对话框 -->
     <el-dialog
-      v-model="dialogVisible"
-      width="50%"
-      @close="dialogVisible = false"
-      class="content-dialog"
+        v-model="dialogVisible"
+        width="50%"
+        @close="dialogVisible = false"
+        class="content-dialog"
     >
       <!-- 标题显示 -->
       <div class="dialog-section">
@@ -341,4 +346,64 @@ export default {
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
+
+/* 使素材类型和添加条目按钮在同一行 */
+.flex-row-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.flex-row-container h1 {
+  margin: 0;
+  font-size: 24px;  /* 设置标题大小 */
+  color: #63afe3;  /* 深色文字 */
+  font-weight: bold;  /* 加粗文字 */
+}
+
+/* 按钮区域样式 */
+.button-row {
+  display: flex;
+  justify-content: flex-start;  /* 将按钮对齐到左边 */
+  gap: 16px;  /* 设置按钮之间的间距 */
+  padding: 10px 0;  /* 上下内边距 */
+}
+
+.back-btn, .search-btn {
+  border-radius: 8px; /* 圆角 */
+  font-size: 14px; /* 字体大小 */
+  padding: 10px 20px; /* 增加按钮的内边距 */
+  transition: all 0.3s ease; /* 添加过渡效果 */
+}
+
+.back-btn {
+  background-color: #3498db; /* 按钮背景色 */
+  border: 1px solid #2980b9; /* 按钮边框 */
+  color: white; /* 按钮文字颜色 */
+}
+
+.search-btn {
+  background-color: #f39c12; /* 按钮背景色 */
+  border: 1px solid #e67e22; /* 按钮边框 */
+  color: white; /* 按钮文字颜色 */
+}
+
+.back-btn:hover {
+  background-color: #2980b9; /* 悬停时改变背景色 */
+  border-color: #1d5b86; /* 悬停时改变边框色 */
+  transform: translateY(-2px); /* 增加悬停效果 */
+}
+
+.search-btn:hover {
+  background-color: #e67e22; /* 悬停时改变背景色 */
+  border-color: #d35400; /* 悬停时改变边框色 */
+  transform: translateY(-2px); /* 增加悬停效果 */
+}
+
+.back-btn:focus, .search-btn:focus {
+  outline: none; /* 去掉按钮点击时的默认边框 */
+  box-shadow: 0 0 5px rgba(52, 152, 219, 0.5); /* 聚焦时的阴影效果 */
+}
 </style>
+

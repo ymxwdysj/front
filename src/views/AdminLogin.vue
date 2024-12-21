@@ -42,12 +42,6 @@
       <div class="button-group">
         <el-button
             type="text"
-            class="register-button"
-            @click="goToRegister">
-          注册
-        </el-button>
-        <el-button
-            type="text"
             class="back-button"
             @click="goBack">
           返回
@@ -88,11 +82,8 @@ export default {
         this.$message.error('用户名或密码错误');
       }
     },
-    goToRegister() {
-      this.$router.push({ name: 'register' });
-    },
     goBack() {
-      this.$router.push({ name: 'welcome' });
+      this.$router.push({name: 'welcome'});
     }
   }
 };
@@ -227,23 +218,23 @@ h1 {
   margin-top: 15px;
 }
 
-/* 注册按钮样式 */
-.register-button, .back-button {
+/* 返回按钮样式 */
+.back-button {
   background-color: #ffffff;
   color: #080710;
   font-weight: bold;
-  width: 48%;
+  width: 100%;
   height: 50px; /* 与输入框一致的高度 */
   border-radius: 5px;
   transition: background-color 0.3s ease;
 }
 
-:deep(.register-button:hover, .back-button:hover) {
+:deep(.back-button:hover) {
   background-color: #6a11cb;
   color: #ffffff;
 }
 
-.register-button:active, .back-button:active {
+.back-button:active {
   background-color: #5a10b6;
 }
 </style>
